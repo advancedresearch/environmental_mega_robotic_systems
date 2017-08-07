@@ -1,0 +1,117 @@
+
+fn main() {
+    machines := [
+        producer(parts: ["a", "b"], produces: ["c"]),
+        producer(parts: ["c", "a"], produces: ["b"]),
+        producer(parts: ["c", "b"], produces: ["a", "d"]),
+        assembler(parts: ["a", "d"], assembles: [0, 1, 2, 3, 4]),
+        transporter(parts: ["c", "b"], transports: [
+            transport(from: 2, to: 3, parts: ["a", "d"]),
+            transport(from: 1, to: 3, parts: ["b"]),
+            transport(from: 0, to: 3, parts: ["c"]),
+            transport(from: 3, to: 0, machines: [0]),
+            transport(from: 3, to: 1, machines: [1]),
+            transport(from: 3, to: 2, machines: [2]),
+            transport(from: 3, to: 3, machines: [3]),
+            transport(from: 3, to: 4, machines: [4]),
+        ]),
+    ]
+
+    transports_parts_self := transports_parts_self(machines)
+    transports_machines_self := transports_machines_self(machines)
+    println(link {
+        "produces self: "produces_self(machines)"\n"
+        "assembles self: "assembles_self(machines)"\n"
+        "transports parts self: "transports_parts_self"\n"
+        "transports machines self: "transports_machines_self"\n"
+        "transport consistent first order: "transport_consistent_first_order(machines)"\n"
+    })
+
+    if !transports_parts_self {
+        why := why(!transports_parts_self)
+        println(link {"Could not produce machine: "why[0]})
+    }
+    if !transports_machines_self {
+        why := why(!transports_machines_self)
+        machine := machines[why[0]].assembles[why[1]]
+        println(link {"Could not setup machine: "machine})
+    }
+}
+
+produces_self(ms: [Machine]) =
+    ∀ i, j { ∃ k, l { ms[k].produces[l] == ms[i].parts[j] } }
+
+assembles_self(ms: [Machine]) =
+    ∀ i len(ms) { ∃ j, k { ms[j].assembles[k] == i } }
+
+transports_parts_self(ms: [Machine]) =
+    ∀ i {
+        ∃ j, k {
+            (ms[j].assembles[k] == i) &&
+            ∀ l {
+                ∃ m, n, o {
+                    (ms[m].transports[n].to == j) &&
+                    (ms[m].transports[n].parts[o] == ms[i].parts[l])
+                }
+            }
+        }
+    }
+
+transports_machines_self(ms: [Machine]) =
+    ∀ i, j {
+        ∃ k, l, m {
+            (ms[k].transports[l].machines[m] == ms[i].assembles[j]) &&
+            (ms[k].transports[l].from == i) &&
+            (ms[k].transports[l].to == ms[i].assembles[j])
+        }
+    }
+
+transport_consistent_first_order(ms: [Machine]) =
+    ∀ i, j, k {
+        ∃ l { ms[ms[i].transports[j].from].produces[l] == ms[i].transports[j].parts[k] }
+    }
+
+fn producer__parts_produces(parts: [str], produces: [str]) -> Machine {
+    return {
+        parts: clone(parts),
+        produces: clone(produces),
+        assembles: [],
+        transports: [],
+    }
+}
+
+fn assembler__parts_assembles(parts: [str], assembles: [f64]) -> Machine {
+    return {
+        parts: clone(parts),
+        produces: [],
+        assembles: clone(assembles),
+        transports: [],
+    }
+}
+
+fn transporter__parts_transports(parts: [str], transports: [Transport]) -> Machine {
+    return {
+        parts: clone(parts),
+        produces: [],
+        assembles: [],
+        transports: clone(transports),
+    }
+}
+
+fn transport__from_to_parts(from: f64, to: f64, parts: [str]) -> Transport {
+    return {
+        from: clone(from),
+        to: clone(to),
+        parts: clone(parts),
+        machines: [],
+    }
+}
+
+fn transport__from_to_machines(from: f64, to: f64, machines: [f64]) -> Transport {
+    return {
+        from: clone(from),
+        to: clone(to),
+        parts: [],
+        machines: clone(machines),
+    }
+}
