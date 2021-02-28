@@ -1,0 +1,183 @@
+/*
+
+# DOCUMENT FORMAT FOR ENVIRONMENT MEGA ROBOT ROBOTIC SYSTEMS
+
+This is a document format for AdvancedResearch effort
+on mitigating the climate crisis using
+Environmental Mega Robotic System (EMRS).
+
+The idea is that in order to make a computer solve
+the design problem of a such complex system,
+one must first determine the language to specify the problem.
+
+The format generates a tree structure,
+with a root node as the result.
+
+*/
+
+_seps:":,[]()"
+
+14 param_type = {
+  "any":"any"
+  "num":"num"
+  "physical_object":"physical_object"
+}
+
+/*
+
+## PARAMETER
+
+A parameter has no specified value,
+but a specified type that is checked at runtime.
+
+When `~` is used in front of a parameter,
+e.g. `~ a : any`, it means that the current object `a` is used
+unless the parameter `a` is specified.
+
+A default value can be specified using e.g. `a : num = 5`.
+
+*/
+13 param = [?["~":"current" .w?] .._seps!:"name" .w? ":" .w? param_type:"type"
+?[.w? "=" .w? expr:"expr"]]
+
+12 multi_item = {
+  [!.$_ .._seps!:"quantity_name" .w! .._seps!:"item"]
+  [?.$_:"quantity" .._seps!:"item"]
+}
+11 multi_set = ["[" .w? .s?([.w? "," .w?] multi_item:"multi_item") .w? "]"]
+
+10 solid_shape = {
+  "box":"box"
+  "sphere":"sphere"
+  "cylinder":"cylinder"
+  "cone":"cone"
+}
+
+// A pipe is shorthand for a hollow cylinder.
+9 shape = {
+  [solid_shape .w? "{" .w? "hollow:" .w? {
+      "true":"hollow"
+      "false":!"hollow"
+    } .w? "}"]
+  "pipe":"pipe"
+}
+
+8 material = {
+  "aluminum":"aluminum"
+  "brass":"brass"
+  "bronze":"bronze"
+  "copper":"copper"
+  "gold":"gold"
+  "iron":"iron"
+  "paper":"paper"
+  "plastic":"plastic"
+  "silver":"silver"
+  "steel":"steel"
+  "tin":"tin"
+  "titanium":"titanium"
+  "water":"water"
+}
+
+/*
+
+# PHYSICAL-OBJECT
+
+A physical object is made of some material and has some shape.
+
+All physical objects can be copied.
+
+*/
+7 physical_object = ["physical_object" .w! "{"
+  .w? "material:" .w? material:"material" .w? ","
+  .w? "shape:" .w? shape:"shape" ?[.w? ","]
+.w? "}"]
+
+/*
+
+## META-OBJECT
+
+A meta object is not a physical object,
+but a way of specifying a multi-set of other objects,
+contained within a region of space constrained by some shape.
+
+*/
+6 meta_object = ["meta_object" .w! "{"
+  .w? "contains:" .w? multi_set:"contains" .w? ","
+  .w? "shape:" .w? solid_shape:"shape" ?[.w? ","]
+.w? "}"]
+
+/*
+
+## LOGICAL-OBJECT-TYPE
+
+- A dock is a platform used to access facility by boat
+- A generator converts other forms of energy into electricity
+- A hatch is used to navigate from one vertical level to another
+- A panel is used to store electronic equipment
+
+*/
+5 logical_object_type = {
+  "dock":"dock"
+  "door":"door"
+  "generator":"generator"
+  "hatch":"hatch"
+  "panel":"panel"
+  "room":"room"
+  "servo":"servo"
+  "turbine":"turbine"
+  "window":"window"
+  "wire":"wire"
+}
+
+/*
+
+## LOGICAL-OBJECT
+
+A logical object is an object defined by its purpose.
+
+*/
+4 logical_object = ["logical_object" .w! "{"
+  .w? "type:" .w? logical_object_type:"type" ?[.w? ","]
+.w? "}"]
+
+3 call_arg = [.._seps!:"name" .w? ":" .w? .._seps!:"val"]
+
+/*
+
+## FUNCTION CALLS
+
+A text object might be used as a function.
+The text is interpreted as a filename containing EMRS source code.
+
+Function calls can pass parameters.
+
+*/
+2 call = [.._seps!:"fn" .w? "("
+  .s?.([.w? "," .w?] call_arg:"call_arg")
+.w? ")"]
+
+3 expr = {
+  call:"call"
+  logical_object:"logical_object"
+  meta_object:"meta_object"
+  physical_object:"physical_object"
+  .$_:"num"
+  .t!:"text"
+}
+
+1 decl = [?["~":"current" .w?] .._seps!:"name" .w? ":=" .w? expr:"expr"]
+
+/*
+
+## RETURN VALUE
+
+Every file must return a value,
+to tell EMRS which object is the root of the tree.
+
+*/
+
+0 doc = [
+  .w? .l(param:"param")
+  .w? .l(decl:"decl")
+  .w? "return" .w! .._seps!:"return"
+.w? ]
